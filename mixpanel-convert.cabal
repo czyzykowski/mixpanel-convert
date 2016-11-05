@@ -1,0 +1,50 @@
+name:                mixpanel-convert
+version:             0.1.0.0
+synopsis:            Convert Mixpanel dump data to format acceptable by druid.io
+description:         Please see README.md
+homepage:            https://github.com/czyzykowski/boss-mixpanel-convert#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Łukasz Czyżykowski
+maintainer:          lukasz.czyzykowski@gmail.com
+copyright:           2016 Łukasz Czyżykowski
+category:            Conversion
+build-type:          Simple
+cabal-version:       >=1.10
+
+executable mixpanel-convert
+  ghc-options:         -Wall -threaded -rtsopts -eventlog -funbox-strict-fields -O2 -dynamic
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  build-depends:       base
+                     , optparse-applicative
+                     , mixpanel-convert
+
+library
+  ghc-options:         -Wall
+  exposed-modules:     Mixpanel.Convert
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  build-depends:       base
+                     , aeson
+                     , bytestring
+                     , text
+                     , unordered-containers
+
+test-suite spec
+  type:                exitcode-stdio-1.0
+  ghc-options:         -Wall
+  default-language:    Haskell2010
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  other-modules:       Mixpanel.ConvertSpec
+  build-depends:       mixpanel-convert
+                     , base
+                     , hspec
+                     , hspec-core
+                     , bytestring
+                     , text
+                     , unordered-containers
+                     , aeson
+                     , test-fixture
