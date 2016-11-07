@@ -1,16 +1,16 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 {-# OPTIONS_GHC -fno-warn-unused-top-binds #-}
 
 module Mixpanel.ConvertSpec (spec) where
 
-import           Prelude hiding (log)
 import           Control.Monad.TestFixture
 import           Control.Monad.TestFixture.TH
 import           Data.Aeson
-import qualified Data.HashMap.Strict as M
-import qualified Data.HashSet        as S
+import qualified Data.HashMap.Strict          as M
+import qualified Data.HashSet                 as S
+import           Prelude                      hiding (log)
 import           Test.Hspec
 
 import           Mixpanel.Convert
@@ -26,11 +26,11 @@ spec = do
       let m = M.fromList [ ("A", String "a"), ("c", String "c") ]
       toLowerKeys m `shouldBe` M.fromList [ ("a", String "a"), ("c", String "c") ]
 
-    it "chooses non-null value if there are duplicated keys when the null is first" $ do
+    it "chooses non-null value for duplicated key when the null is first" $ do
       let m = M.fromList [ ("A", Null), ("a", String "a") ]
       toLowerKeys m `shouldBe` M.fromList [ ("a", String "a") ]
 
-    it "chooses non-null value if there are duplicated keys when the null is second" $ do
+    it "chooses non-null value for duplicated key when the null is second" $ do
       let m = M.fromList [ ("A", String "a"), ("a", Null) ]
       toLowerKeys m `shouldBe` M.fromList [ ("a", String "a") ]
 
@@ -55,12 +55,15 @@ spec = do
       convert' M.empty (Just o) `shouldBe` Nothing
 
     it "returns flattened object with lowercased keys" $ do
-      let o = object [ "properties" .= object [ "A" .= String "b"], "event" .= String "c" ]
-      convert' M.empty (Just o) `shouldBe` Just (object [ "a" .= String "b", "event" .= String "c" ])
+      let p = object [ "A" .= String "b"]
+      let o = object [ "properties" .= p, "event" .= String "c" ]
+      let e = object [ "a" .= String "b", "event" .= String "c" ]
+      convert' M.empty (Just o) `shouldBe` Just e
 
     it "merges with the supplied empty object" $ do
-      let o = object [ "properties" .= object [ "A" .= String "b"], "event" .= String "c" ]
-      let e = M.fromList [ ("a", Null), ("b", String "d") ]
+      let p = object [ "A" .= String "b"]
+      let o = object [ "properties" .= p, "event" .= String "c" ]
+      let e = M.fromList [ ("A", Null), ("b", String "d") ]
       let c = object [ "a" .= String "b", "event" .= String "c", "b" .= String "d" ]
       convert' e (Just o) `shouldBe` Just c
 
@@ -92,7 +95,8 @@ spec = do
       toKeys (Just (object [ "a" .= String "b" ])) `shouldBe` []
 
     it "returns list of keys from the properties object" $ do
-      let o = object [ "properties" .= object [ "a" .= String "b", "c" .= String "d" ] ]
+      let p = object [ "a" .= String "b", "c" .= String "d" ]
+      let o = object [ "properties" .= p ]
       toKeys (Just o) `shouldBe` [ "event", "a", "c" ]
 
 
@@ -133,8 +137,9 @@ spec = do
       gatherKeys' s `shouldBe` S.fromList [ "a", "b", "event" ]
 
     it "collects unique keys from multiple objects" $ do
-      let s = "{\"properties\": {\"a\": 1, \"b\": 2}}\n{\"properties\": {\"a\": 1, \"c\": 2}}"
-      gatherKeys' s `shouldBe` S.fromList [ "a", "b", "c", "event" ]
+      let s = "{\"properties\": {\"A\": 1, \"b\": 2}}\n\
+              \{\"properties\": {\"a\": 1, \"c\": 2}}"
+      gatherKeys' s `shouldBe` S.fromList [ "A", "a", "b", "c", "event" ]
 
 
   describe "gatherKeys" $ do
@@ -168,11 +173,12 @@ spec = do
       paths `shouldBe` [ "output.jsonl" ]
 
     it "processes data properly" $ do
-      let s = unlines' [ "{\"properties\": {\"a\": 1, \"b\": 2}, \"event\": \"Event\"}"
-                       , "{\"properties\": {\"a\": 1, \"c\": 2}, \"event\": \"Event\"}"
-                       ]
+      let s = "{\"properties\": {\"a\": 1, \"b\": 2}, \"event\": \"Event\"}\n\
+              \{\"properties\": {\"a\": 1, \"c\": 2}, \"event\": \"Event\"}"
+
       let fixture = def { _readFile  = \_ -> return s
                         , _writeFile = \_ content -> log content >> return ()
                         }
       let contents = logTestFixture (run ("input.jsonl", "output.jsonl")) fixture
-      contents `shouldBe` [ "{\"event\":\"Event\",\"a\":1,\"b\":2,\"c\":null}\n{\"event\":\"Event\",\"a\":1,\"b\":null,\"c\":2}" ]
+      contents `shouldBe` [ "{\"event\":\"Event\",\"a\":1,\"b\":2,\"c\":null}\n\
+                            \{\"event\":\"Event\",\"a\":1,\"b\":null,\"c\":2}" ]

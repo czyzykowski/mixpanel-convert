@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE Strict #-}
+{-# LANGUAGE Strict            #-}
 
 module Mixpanel.Convert where
 
-import           Prelude hiding (readFile, writeFile)
 import           Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.HashMap.Strict        as M
 import qualified Data.HashSet               as S
 import qualified Data.Text                  as T
+import           Prelude                    hiding (readFile, writeFile)
 
 
 class Monad m => MonadFS m where
